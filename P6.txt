@@ -1,0 +1,241 @@
+//////CLASSS//////////
+
+
+#pragma once
+#include <fstream>
+#include <iostream>
+using namespace std;
+
+class SudukuSolver
+{
+public:
+	
+	SudukuSolver();
+
+	void SolveSudukuPuzzle() { solver(0, 0); }
+
+	int getWaysToSolve() { return waysToSolve; }
+
+	void importPuzzle(istream& fin);
+
+
+private:
+
+	//VARIABLES
+	char sudukuGrid[16][16];		//holds the puzzle from file
+
+	char characterArr[16];			//holds all hex characters from 0-F
+
+	int characterArrTracker[16];	// keeps track of what character have been used; 0 if not, 1 if have
+
+	int waysToSolve;				//holds the possible ways to solve the puzzle
+		
+	//METHODS
+	bool rowValid(int row);
+
+	bool columnValid(int column);
+
+	bool gridValid(int row, int column);
+
+
+	int solver(int r, int c);       //give var real names
+
+
+	int findChar(char c);
+
+
+	void completeChecker(int index); //change the name here
+
+	void resetChecker();             //change the name here
+
+
+	void resetPuzzle(int row, int col);
+
+
+	void setWaysToSolve(int r) { waysToSolve += r; }
+
+};
+
+
+//////SOURCE FILE/////////
+
+#include "SudukuSolver.h"
+
+
+SudukuSolver::SudukuSolver()
+{
+	waysToSolve = 0;
+
+	const int cArr[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
+	for (int i = 0; i < 16; i++)
+		characterArr[i] = cArr[i];
+}
+
+void SudukuSolver::resetChecker()
+{
+	for (int i = 0; i < 16; i++)
+		characterArrTracker[i] = 0;
+}
+
+int SudukuSolver::findChar(char c)
+{
+	for (int i = 0; i < 16; i++)
+	{
+		if (c == '.')
+			return -1;
+
+		if (characterArr[i] == c)
+			return i;
+	}
+}
+
+void SudukuSolver::completeChecker(int index)
+{
+	if (index != -1)
+		characterArrTracker[index] += 1;
+	
+}
+
+bool SudukuSolver::rowValid(int row)
+{
+	resetChecker();
+
+	for (int col = 0; col < 16; col++)
+		completeChecker(findChar(sudukuGrid[row][col]));
+
+	for (int i = 0; i < 16; i++)
+		if (characterArrTracker[i] >= 2)
+			return false;
+	
+	return true;
+			
+}
+bool SudukuSolver::columnValid(int column)
+{
+	resetChecker();
+
+	for (int row = 0; row < 16; row++)		
+		completeChecker(findChar(sudukuGrid[row][column]));
+
+	for (int i = 0; i < 16; i++)		
+		if (characterArrTracker[i] >= 2)			
+			return false;
+
+	return true;
+
+}
+bool SudukuSolver::gridValid(int row, int column)
+{
+	int row1 = row - (row % 4), col1 = column - (column % 4), r, c;
+
+	resetChecker();
+
+	for (r = row1; r < row1 + 4; r++)			
+		for (c = col1; c < col1 + 4; c++)					
+			completeChecker(findChar(sudukuGrid[r][c]));
+
+	
+	for (int i = 0; i < 16; i++)		
+		if (characterArrTracker[i] >= 2)			
+			return false;
+			
+	return true;
+}
+
+
+
+int SudukuSolver::solver(int r, int c)
+{
+	int  k = 0;
+
+	while (r < 16 && sudukuGrid[r][c] != '.') //find the location of the first '.' and start solving
+	{
+		c += 1;
+		if (c == 16)
+		{
+			r += 1;
+			c = 0;
+		}
+	}
+
+	if (r == 16) //base case, no '.' have been found; thus one solution found or completed puzzle given
+		return 1;
+
+	for (int i = k; i < 16; i++)
+	{
+		sudukuGrid[r][c] = characterArr[i];
+
+																						//recursive call
+		if (rowValid(r) == true && columnValid(c) == true && gridValid(r, c) == true && solver(r, c) == 1)
+		{
+			setWaysToSolve(1);    //increment counter each time a way to solve is found
+		}
+	}
+
+	resetPuzzle(r, c); //clear the inserted variables when finished
+
+	return 0;
+	
+
+}
+
+void SudukuSolver::resetPuzzle(int row, int col)
+{
+	sudukuGrid[row][col] = '.';
+}
+
+void SudukuSolver::importPuzzle(istream& fin)
+{
+	char data;
+
+	for (int row = 0; row < 16; row++)												//read in suduku data
+	{
+		for (int col = 0; col < 16; col++)
+		{
+			fin >> data;                 
+			sudukuGrid[row][col] = data;
+		}
+	}
+}
+
+
+/////MAIN///////
+
+#include "SudukuSolver.h"
+#include <fstream>
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main()
+{
+	cout << "START TIME:  " << __TIMESTAMP__ << endl << "still running.......please wait"  << endl;
+
+	string filename = "puzzle4.txt";
+	
+	ifstream fin(filename);
+
+	SudukuSolver puzzle;
+
+	int possibilities = 0; 
+	
+	
+	puzzle.importPuzzle(fin);
+
+	fin.close();
+	
+	puzzle.SolveSudukuPuzzle();
+
+	possibilities = puzzle.getWaysToSolve();
+	
+	cout << "\n("  << possibilities  << ')' << " Ways To Solve (" << filename << ')' << endl;
+
+
+	system("PAUSE");
+	return 0;
+
+}
+
+
+
